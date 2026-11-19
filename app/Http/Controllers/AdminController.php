@@ -56,12 +56,14 @@ class AdminController extends Controller
     public function eventIndex(): View
     {
         $events = Event::with(['kategoriLombas' => function ($q) {
-            $q->withCount(['pendaftarans as verified_count' => function ($sub) {
+            $q->with('juris')->withCount(['pendaftarans as verified_count' => function ($sub) {
                 $sub->where('status_pembayaran', 'verified');
             }]);
         }])->latest()->get();
 
-        return view('admin.events_index', compact('events'));
+        $allJuris = User::where('role', 'juri')->orderBy('id')->get();
+
+        return view('admin.events_index', compact('events', 'allJuris'));
     }
 
     public function eventStore(Request $request): RedirectResponse
@@ -108,6 +110,8 @@ class AdminController extends Controller
             'jam_mulai' => ['nullable', 'string', 'max:10'],
             'jam_selesai' => ['nullable', 'string', 'max:10'],
             'status_lomba' => ['required', 'in:upcoming,ongoing,validasi,finished'],
+            'juri_ids' => ['nullable', 'array'],
+            'juri_ids.*' => ['exists:users,id'],
         ]);
 
         $slug = Str::slug($validated['nama_kategori']);
@@ -118,7 +122,7 @@ class AdminController extends Controller
             $counter++;
         }
 
-        $event->kategoriLombas()->create([
+        $kategori = $event->kategoriLombas()->create([
             'nama_kategori' => $validated['nama_kategori'],
             'jenis_burung' => $validated['jenis_burung'] ?? null,
             'slug' => $slug,
@@ -129,7 +133,23 @@ class AdminController extends Controller
             'status_lomba' => $validated['status_lomba'],
         ]);
 
+        if (! empty($validated['juri_ids'])) {
+            $kategori->juris()->sync($validated['juri_ids']);
+        }
+
         return back()->with('success', "Kategori '{$validated['nama_kategori']}' berhasil ditambahkan ke event!");
+    }
+
+    public function updateKategoriJuris(Request $request, KategoriLomba $kategori): RedirectResponse
+    {
+        $validated = $request->validate([
+            'juri_ids' => ['nullable', 'array'],
+            'juri_ids.*' => ['exists:users,id'],
+        ]);
+
+        $kategori->juris()->sync($validated['juri_ids'] ?? []);
+
+        return back()->with('success', "Penugasan dewan juri penilai untuk kategori '{$kategori->nama_kategori}' berhasil diperbarui!");
     }
 
     public function updateKategoriStatus(Request $request, KategoriLomba $kategori): RedirectResponse
@@ -204,6 +224,7 @@ class AdminController extends Controller
         if ($q) {
             $query->where(function ($sub) use ($q) {
                 $sub->where('name', 'like', "%{$q}%")
+                    ->orWhere('kode_id', 'like', "%{$q}%")
                     ->orWhere('phone', 'like', "%{$q}%")
                     ->orWhere('email', 'like', "%{$q}%");
             });
@@ -227,7 +248,10 @@ class AdminController extends Controller
             'password' => ['required', 'string', 'min:6'],
         ]);
 
+        $kodeId = User::generateKodeId($validated['role']);
+
         User::create([
+            'kode_id' => $kodeId,
             'name' => $validated['name'],
             'email' => $validated['email'] ?? null,
             'phone' => $validated['phone'],
@@ -235,7 +259,7 @@ class AdminController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        return back()->with('success', "Akun pengguna '{$validated['name']}' dengan role {$validated['role']} berhasil dibuat!");
+        return back()->with('success', "Akun pengguna '{$validated['name']}' ({$kodeId}) dengan role {$validated['role']} berhasil dibuat!");
     }
 
     public function userUpdate(Request $request, User $user): RedirectResponse

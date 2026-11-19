@@ -71,6 +71,7 @@ class AuthController extends Controller
         ]);
 
         $user = User::create([
+            'kode_id' => User::generateKodeId('peserta'),
             'name' => $validated['name'],
             'phone' => $validated['phone'],
             'email' => null,

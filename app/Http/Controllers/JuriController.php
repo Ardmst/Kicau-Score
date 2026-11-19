@@ -22,10 +22,20 @@ class JuriController extends Controller
     {
         $juri = Auth::user();
 
-        // Cari kategori yang sedang ongoing
-        $kategoriList = KategoriLomba::with('event')
-            ->whereIn('status_lomba', ['ongoing', 'upcoming', 'validasi', 'finished'])
-            ->get();
+        // Cari kategori yang relevan untuk juri ini
+        $kategoriQuery = KategoriLomba::with(['event', 'juris'])
+            ->whereIn('status_lomba', ['ongoing', 'upcoming', 'validasi', 'finished']);
+
+        if (! $juri->isAdmin()) {
+            $kategoriQuery->where(function ($q) use ($juri) {
+                $q->whereDoesntHave('juris')
+                    ->orWhereHas('juris', function ($sub) use ($juri) {
+                        $sub->where('users.id', $juri->id);
+                    });
+            });
+        }
+
+        $kategoriList = $kategoriQuery->get();
 
         $selectedKategoriId = $request->query('kategori_id');
         $activeKategori = null;
@@ -66,10 +76,15 @@ class JuriController extends Controller
         ));
     }
 
-    public function scoringForm(Pendaftaran $pendaftaran): View
+    public function scoringForm(Pendaftaran $pendaftaran): View|RedirectResponse
     {
         $juri = Auth::user();
-        $pendaftaran->load(['burung', 'kategoriLomba.event']);
+        $pendaftaran->load(['burung', 'kategoriLomba.event', 'kategoriLomba.juris']);
+
+        if (! $juri->isAdmin() && $pendaftaran->kategoriLomba->juris->isNotEmpty() && ! $pendaftaran->kategoriLomba->juris->contains('id', $juri->id)) {
+            return redirect()->route('juri.dashboard')
+                ->with('error', "Anda tidak terdaftar sebagai dewan juri penilai untuk kategori '{$pendaftaran->kategoriLomba->nama_kategori}'.");
+        }
 
         $penilaian = Penilaian::where('pendaftaran_id', $pendaftaran->id)
             ->where('juri_id', $juri->id)
@@ -125,6 +140,11 @@ class JuriController extends Controller
 
         if ($kategoriStatus !== 'ongoing' && ! $juri->isAdmin()) {
             return back()->with('error', 'Sesi penilaian untuk kategori ini tidak sedang berlangsung (ongoing).');
+        }
+
+        $pendaftaran->load('kategoriLomba.juris');
+        if (! $juri->isAdmin() && $pendaftaran->kategoriLomba->juris->isNotEmpty() && ! $pendaftaran->kategoriLomba->juris->contains('id', $juri->id)) {
+            return back()->with('error', "Anda tidak memiliki wewenang penilaian untuk kategori '{$pendaftaran->kategoriLomba->nama_kategori}'.");
         }
 
         if ($penilaian) {

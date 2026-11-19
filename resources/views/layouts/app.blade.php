@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'KicauScore' }} - Platform Penjurian Burung Berkicau</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="alternate icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('favicon.svg') }}">
+
     <!-- Google Fonts: Plus Jakarta Sans & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,10 +45,32 @@
         }
     </script>
     <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        html { -webkit-text-size-adjust: 100%; }
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
         .tabular-nums { font-variant-numeric: tabular-nums; }
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
             vertical-align: middle;
+            display: inline-block;
+            line-height: 1;
+        }
+        /* Cross-Browser Scrollbar (Chrome, Opera, Firefox) */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+        .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        button::-moz-focus-inner, [type="button"]::-moz-focus-inner, [type="submit"]::-moz-focus-inner {
+            border-style: none;
+            padding: 0;
         }
     </style>
 </head>
@@ -54,50 +81,49 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
             
             <!-- Logo & Brand -->
-            <a href="{{ route('home') }}" class="flex items-center gap-3">
+            <a href="{{ route('home') }}" class="flex items-center gap-3 shrink-0">
                 <div class="w-10 h-10 rounded-xl bg-[#2E6B56] text-white flex items-center justify-center shadow-sm">
                     <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">rewarded_ads</span>
                 </div>
                 <div>
-                    <span class="font-headline font-bold text-xl text-[#0F172A] tracking-tight flex items-center gap-1.5">
+                    <span class="font-headline font-bold text-xl text-[#0F172A] tracking-tight block">
                         KicauScore
-                        <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold tracking-wide">PRO</span>
                     </span>
-                    <p class="text-xs text-slate-500 hidden sm:block">Digital Avian Contest Scoring Platform</p>
+                    <p class="text-[11px] text-slate-500 hidden sm:block">Digital Avian Contest Scoring Platform</p>
                 </div>
             </a>
 
             <!-- Navigation Links -->
-            <nav class="hidden md:flex items-center gap-6">
-                <a href="{{ route('home') }}" class="text-sm font-medium {{ request()->routeIs('home') ? 'text-[#2E6B56] font-semibold' : 'text-slate-600 hover:text-[#2E6B56]' }} transition-colors">
+            <nav class="hidden lg:flex items-center gap-1 xl:gap-1.5 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/90 shadow-2xs shrink-0">
+                <a href="{{ route('home') }}" class="h-9 px-3 xl:px-3.5 inline-flex items-center justify-center text-center whitespace-nowrap rounded-xl text-xs xl:text-sm font-semibold transition-all duration-150 {{ request()->routeIs('home') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80' }}">
                     Beranda & Rundown
                 </a>
-                <a href="{{ route('scoreboard') }}" class="text-sm font-medium {{ request()->routeIs('scoreboard*') ? 'text-[#2E6B56] font-semibold' : 'text-slate-600 hover:text-[#2E6B56]' }} transition-colors">
+                <a href="{{ route('scoreboard') }}" class="h-9 px-3 xl:px-3.5 inline-flex items-center justify-center text-center whitespace-nowrap rounded-xl text-xs xl:text-sm font-semibold transition-all duration-150 {{ request()->routeIs('scoreboard*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80' }}">
                     Live Klasemen
                 </a>
                 @auth
                     @if(auth()->user()->isPeserta())
-                        <a href="{{ route('peserta.burung.index') }}" class="text-sm font-medium {{ request()->routeIs('peserta.burung*') ? 'text-[#2E6B56] font-semibold' : 'text-slate-600 hover:text-[#2E6B56]' }} transition-colors">
+                        <a href="{{ route('peserta.burung.index') }}" class="h-9 px-3 xl:px-3.5 inline-flex items-center justify-center text-center whitespace-nowrap rounded-xl text-xs xl:text-sm font-semibold transition-all duration-150 {{ request()->routeIs('peserta.burung*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80' }}">
                             Burung Saya
                         </a>
-                        <a href="{{ route('peserta.daftar') }}" class="text-sm font-medium {{ request()->routeIs('peserta.daftar*') ? 'text-[#2E6B56] font-semibold' : 'text-slate-600 hover:text-[#2E6B56]' }} transition-colors">
+                        <a href="{{ route('peserta.daftar') }}" class="h-9 px-3 xl:px-3.5 inline-flex items-center justify-center text-center whitespace-nowrap rounded-xl text-xs xl:text-sm font-semibold transition-all duration-150 {{ request()->routeIs('peserta.daftar*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80' }}">
                             Daftar Lomba
                         </a>
                     @elseif(auth()->user()->isJuri())
-                        <a href="{{ route('juri.dashboard') }}" class="text-sm font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1">
+                        <a href="{{ route('juri.dashboard') }}" class="h-9 px-3 xl:px-3.5 inline-flex items-center justify-center text-center whitespace-nowrap rounded-xl text-xs xl:text-sm font-semibold transition-all duration-150 gap-1.5 {{ request()->routeIs('juri.*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200' }}">
                             <span class="material-symbols-outlined text-[18px]">edit_note</span> Penjurian Lapangan
                         </a>
                     @elseif(auth()->user()->isAdmin())
-                        <a href="{{ route('admin.dashboard') }}" class="text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'text-[#2E6B56] font-semibold' : 'text-slate-600 hover:text-[#2E6B56]' }}">
+                        <a href="{{ route('admin.dashboard') }}" class="h-9 px-3 xl:px-3.5 inline-flex items-center justify-center text-center whitespace-nowrap rounded-xl text-xs xl:text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.dashboard') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80' }}">
                             Panel Admin
                         </a>
-                        <a href="{{ route('admin.events.index') }}" class="text-sm font-medium {{ request()->routeIs('admin.events*') ? 'text-[#2E6B56] font-semibold' : 'text-slate-600 hover:text-[#2E6B56]' }}">
+                        <a href="{{ route('admin.events.index') }}" class="h-9 px-3 xl:px-3.5 inline-flex items-center justify-center text-center whitespace-nowrap rounded-xl text-xs xl:text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.events*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80' }}">
                             Event & Kategori
                         </a>
-                        <a href="{{ route('admin.verifikasi.index') }}" class="text-sm font-medium {{ request()->routeIs('admin.verifikasi*') ? 'text-[#2E6B56] font-semibold' : 'text-slate-600 hover:text-[#2E6B56]' }}">
+                        <a href="{{ route('admin.verifikasi.index') }}" class="h-9 px-3 xl:px-3.5 inline-flex items-center justify-center text-center whitespace-nowrap rounded-xl text-xs xl:text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.verifikasi*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80' }}">
                             Verifikasi
                         </a>
-                        <a href="{{ route('admin.users.index') }}" class="text-sm font-medium {{ request()->routeIs('admin.users*') ? 'text-[#2E6B56] font-semibold' : 'text-slate-600 hover:text-[#2E6B56]' }}">
+                        <a href="{{ route('admin.users.index') }}" class="h-9 px-3 xl:px-3.5 inline-flex items-center justify-center text-center whitespace-nowrap rounded-xl text-xs xl:text-sm font-semibold transition-all duration-150 {{ request()->routeIs('admin.users*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80' }}">
                             Kelola User
                         </a>
                     @endif
@@ -105,16 +131,16 @@
             </nav>
 
             <!-- User Auth Actions & Mobile Hamburger -->
-            <div class="flex items-center gap-2 sm:gap-3">
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
                 @auth
                     <div class="flex items-center gap-2">
-                        <a href="{{ route('dashboard') }}" class="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
-                            <div class="w-7 h-7 rounded-full bg-slate-100 text-[#2E6B56] flex items-center justify-center font-bold text-xs">
+                        <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors shadow-2xs">
+                            <div class="w-8 h-8 rounded-full bg-emerald-50 text-[#2E6B56] border border-emerald-200 flex items-center justify-center font-bold text-xs">
                                 {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
                             </div>
                             <div class="text-left hidden sm:block">
                                 <span class="text-xs font-semibold text-slate-800 block leading-tight">{{ auth()->user()->name }}</span>
-                                <span class="text-[10px] uppercase font-bold text-slate-400">{{ auth()->user()->role }}</span>
+                                <span class="text-[10px] uppercase font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">{{ auth()->user()->kode_id }} &bull; {{ auth()->user()->role }}</span>
                             </div>
                         </a>
                         <form action="{{ route('logout') }}" method="POST" class="inline">
@@ -134,43 +160,43 @@
                 @endauth
 
                 <!-- Hamburger Button (Mobile / Tablet) -->
-                <button type="button" onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" class="md:hidden p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
+                <button type="button" onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" class="lg:hidden p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
                     <span class="material-symbols-outlined text-[22px]">menu</span>
                 </button>
             </div>
         </div>
 
         <!-- Mobile Navigation Menu -->
-        <div id="mobile-nav" class="hidden md:hidden px-4 py-3 space-y-1.5 border-t border-slate-100 bg-white">
-            <a href="{{ route('home') }}" class="block px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
+        <div id="mobile-nav" class="hidden lg:hidden px-4 py-3 space-y-1.5 border-t border-slate-100 bg-white">
+            <a href="{{ route('home') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ request()->routeIs('home') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-50' }}">
                 Beranda & Rundown
             </a>
-            <a href="{{ route('scoreboard') }}" class="block px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
+            <a href="{{ route('scoreboard') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ request()->routeIs('scoreboard*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-50' }}">
                 Live Klasemen
             </a>
             @auth
                 @if(auth()->user()->isPeserta())
-                    <a href="{{ route('peserta.burung.index') }}" class="block px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                    <a href="{{ route('peserta.burung.index') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ request()->routeIs('peserta.burung*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-50' }}">
                         Burung Saya
                     </a>
-                    <a href="{{ route('peserta.daftar') }}" class="block px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                    <a href="{{ route('peserta.daftar') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ request()->routeIs('peserta.daftar*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-50' }}">
                         Daftar Lomba
                     </a>
                 @elseif(auth()->user()->isJuri())
-                    <a href="{{ route('juri.dashboard') }}" class="block px-3 py-2 rounded-lg text-xs font-semibold text-emerald-800 bg-emerald-50">
+                    <a href="{{ route('juri.dashboard') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ request()->routeIs('juri.*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-emerald-800 bg-emerald-50' }}">
                         Penjurian Lapangan
                     </a>
                 @elseif(auth()->user()->isAdmin())
-                    <a href="{{ route('admin.dashboard') }}" class="block px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                    <a href="{{ route('admin.dashboard') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ request()->routeIs('admin.dashboard') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-50' }}">
                         Panel Admin
                     </a>
-                    <a href="{{ route('admin.events.index') }}" class="block px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                    <a href="{{ route('admin.events.index') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ request()->routeIs('admin.events*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-50' }}">
                         Event & Kategori
                     </a>
-                    <a href="{{ route('admin.verifikasi.index') }}" class="block px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                    <a href="{{ route('admin.verifikasi.index') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ request()->routeIs('admin.verifikasi*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-50' }}">
                         Verifikasi
                     </a>
-                    <a href="{{ route('admin.users.index') }}" class="block px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                    <a href="{{ route('admin.users.index') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ request()->routeIs('admin.users*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-50' }}">
                         Kelola User (CRUD)
                     </a>
                 @endif
@@ -215,7 +241,7 @@
     <footer class="bg-white border-t border-slate-200 py-6 mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
             <div class="flex items-center gap-2">
-                <span class="font-bold text-[#0F172A]">KicauScore 2.0</span>
+                <span class="font-bold text-[#0F172A]">KicauScore</span>
                 <span>&bull;</span>
                 <span>Platform Penjurian Burung Berkicau Multi-Juri Terstandarisasi</span>
             </div>

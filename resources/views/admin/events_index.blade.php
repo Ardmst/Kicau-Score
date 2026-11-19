@@ -81,6 +81,30 @@
                                     <span>Biaya: <strong>Rp {{ number_format($kat->biaya, 0, ',', '.') }}</strong></span>
                                     <span>Gantangan: <strong>{{ $kat->verified_count }} / {{ $kat->kuota }}</strong></span>
                                 </div>
+                                <div class="text-[11px] text-slate-500 pt-1.5 border-t border-slate-200/60">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="font-medium text-slate-600">Dewan Juri:</span>
+                                        <span class="font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 text-[10px]">
+                                            {{ $kat->juris->count() }} Juri
+                                        </span>
+                                    </div>
+                                    @if($kat->juris->isNotEmpty())
+                                        <div class="flex flex-wrap gap-1">
+                                            @foreach($kat->juris as $assignedJuri)
+                                                <span class="inline-block px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-mono font-semibold text-slate-700" title="{{ $assignedJuri->name }}">
+                                                    {{ $assignedJuri->kode_id }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-[10px] text-slate-400 italic">Semua juri terdaftar</span>
+                                    @endif
+                                </div>
+                                <button type="button" 
+                                        onclick='openAturJuriModal({{ $kat->id }}, "{{ addslashes($kat->nama_kategori) }}", @json($kat->juris->pluck("id")))'
+                                        class="w-full mt-2 py-1 px-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-semibold border border-emerald-200 flex items-center justify-center gap-1 transition-colors">
+                                    <span class="material-symbols-outlined text-[15px]">gavel</span> Atur Dewan Juri
+                                </button>
                             </div>
                         @empty
                             <div class="col-span-full py-4 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
@@ -237,6 +261,22 @@
                 </select>
             </div>
 
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Tugaskan Dewan Juri (Opsional)</label>
+                <p class="text-[11px] text-slate-500 mb-2">Pilih dewan juri yang ditugaskan menilai burung di kelas/kategori ini:</p>
+                <div class="space-y-1.5 max-h-36 overflow-y-auto p-2.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    @forelse($allJuris as $juri)
+                        <label class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white transition cursor-pointer text-xs">
+                            <input type="checkbox" name="juri_ids[]" value="{{ $juri->id }}" class="rounded text-[#2E6B56] focus:ring-[#2E6B56]">
+                            <span class="font-medium text-slate-800">{{ $juri->name }}</span>
+                            <span class="font-mono text-[10px] text-emerald-700 bg-emerald-100/70 px-1.5 py-0.2 rounded">{{ $juri->kode_id }}</span>
+                        </label>
+                    @empty
+                        <p class="text-xs text-slate-400">Belum ada akun juri yang terdaftar.</p>
+                    @endforelse
+                </div>
+            </div>
+
             <div class="flex items-center justify-end gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('modal-tambah-kategori').classList.add('hidden')" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50">
                     Batal
@@ -249,12 +289,68 @@
     </div>
 </div>
 
+<!-- Modal Atur Dewan Juri Kategori -->
+<div id="modal-atur-juri" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 relative">
+        <button type="button" onclick="document.getElementById('modal-atur-juri').classList.add('hidden')" class="absolute right-4 top-4 text-slate-400 hover:text-slate-600">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+
+        <div class="mb-4">
+            <h3 class="font-headline font-bold text-lg text-slate-900">Penugasan Dewan Juri</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Kategori: <strong id="atur-juri-kategori-name" class="text-slate-800"></strong></p>
+        </div>
+
+        <form id="form-atur-juri" method="POST" class="space-y-4">
+            @csrf
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Daftar Dewan Juri Penilai</label>
+                <p class="text-[11px] text-slate-500 mb-2">Centang juri yang berhak menilai burung pada kategori/kelas ini:</p>
+                <div class="space-y-1.5 max-h-52 overflow-y-auto p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                    @forelse($allJuris as $juri)
+                        <label class="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white transition cursor-pointer text-xs border border-transparent hover:border-slate-200">
+                            <input type="checkbox" name="juri_ids[]" value="{{ $juri->id }}" class="juri-checkbox rounded text-[#2E6B56] focus:ring-[#2E6B56]">
+                            <div class="flex-1">
+                                <span class="font-semibold text-slate-800 block">{{ $juri->name }}</span>
+                                <span class="text-[11px] text-slate-500">{{ $juri->phone }}</span>
+                            </div>
+                            <span class="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">{{ $juri->kode_id }}</span>
+                        </label>
+                    @empty
+                        <p class="text-xs text-slate-400">Belum ada akun juri yang terdaftar di sistem.</p>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('modal-atur-juri').classList.add('hidden')" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#2E6B56] hover:bg-[#245443] text-white text-xs font-semibold shadow-sm">
+                    Simpan Penugasan Juri
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @push('scripts')
 <script>
     function openTambahKategoriModal(eventId, eventName) {
         document.getElementById('form-tambah-kategori').action = `/admin/events/${eventId}/kategori`;
         document.getElementById('kategori-event-name').textContent = eventName;
         document.getElementById('modal-tambah-kategori').classList.remove('hidden');
+    }
+
+    function openAturJuriModal(kategoriId, kategoriName, assignedJuriIds) {
+        document.getElementById('form-atur-juri').action = `/admin/kategori/${kategoriId}/juris`;
+        document.getElementById('atur-juri-kategori-name').textContent = kategoriName;
+
+        document.querySelectorAll('.juri-checkbox').forEach(cb => {
+            cb.checked = assignedJuriIds.includes(parseInt(cb.value));
+        });
+
+        document.getElementById('modal-atur-juri').classList.remove('hidden');
     }
 </script>
 @endpush

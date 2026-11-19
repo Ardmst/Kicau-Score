@@ -67,7 +67,7 @@
                 <input type="hidden" name="role" value="{{ $role }}">
             @endif
             <div class="relative w-full md:w-64">
-                <input type="text" name="q" value="{{ $q ?? '' }}" placeholder="Cari nama, no. HP, email..." 
+                <input type="text" name="q" value="{{ $q ?? '' }}" placeholder="Cari ID unik, nama, no. HP..." 
                        class="w-full pl-9 pr-3.5 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#2E6B56]">
                 <span class="material-symbols-outlined absolute left-2.5 top-2 text-slate-400 text-[18px]">search</span>
             </div>
@@ -101,7 +101,9 @@
                         <tr class="hover:bg-slate-50/80 transition-colors">
                             <td class="py-3.5 px-4">
                                 <strong class="font-bold text-slate-900 block">{{ $user->name }}</strong>
-                                <span class="text-xs text-slate-400">ID: #{{ $user->id }}</span>
+                                <span class="inline-flex items-center gap-1 font-mono text-[11px] font-semibold mt-0.5 px-2 py-0.5 rounded border {{ $user->role === 'admin' ? 'bg-slate-100 text-slate-800 border-slate-300' : ($user->role === 'juri' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-blue-50 text-blue-800 border-blue-200') }}">
+                                    {{ $user->kode_id }}
+                                </span>
                             </td>
                             <td class="py-3.5 px-4 text-slate-700 text-xs font-medium">
                                 {{ $user->phone ?? '-' }}

@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
     {
         // 1. Users (Admin, Juri, Peserta)
         $admin = User::firstOrCreate(['email' => 'admin@kicauscore.com'], [
+            'kode_id' => 'ADM-001',
             'name' => 'Administrator KicauScore',
             'phone' => '081234567890',
             'password' => Hash::make('password'),
@@ -28,27 +29,31 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $juri1 = User::firstOrCreate(['email' => 'bambang@kicauscore.com'], [
-            'name' => 'Bambang Sutrisno (Juri 01)',
+            'kode_id' => 'JUR-001',
+            'name' => 'Bambang Sutrisno',
             'phone' => '081298765431',
             'password' => Hash::make('password'),
             'role' => 'juri',
         ]);
 
         $juri2 = User::firstOrCreate(['email' => 'joko@kicauscore.com'], [
-            'name' => 'Joko Ansori (Juri 02)',
+            'kode_id' => 'JUR-002',
+            'name' => 'Joko Ansori',
             'phone' => '081298765432',
             'password' => Hash::make('password'),
             'role' => 'juri',
         ]);
 
         $juri3 = User::firstOrCreate(['email' => 'tri@kicauscore.com'], [
-            'name' => 'Tri Wibowo (Juri 03)',
+            'kode_id' => 'JUR-003',
+            'name' => 'Tri Wibowo',
             'phone' => '081298765433',
             'password' => Hash::make('password'),
             'role' => 'juri',
         ]);
 
         $peserta1 = User::firstOrCreate(['phone' => '081311223344'], [
+            'kode_id' => 'PST-001',
             'name' => 'Ahmad Fauzi',
             'email' => 'fauzi@kicauscore.com',
             'phone' => '081311223344',
@@ -57,6 +62,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $peserta2 = User::firstOrCreate(['email' => 'budi@kicauscore.com'], [
+            'kode_id' => 'PST-002',
             'name' => 'Budi Santoso',
             'phone' => '081322334455',
             'password' => Hash::make('password'),
@@ -64,6 +70,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $peserta3 = User::firstOrCreate(['email' => 'hendra@kicauscore.com'], [
+            'kode_id' => 'PST-003',
             'name' => 'Hendra Wijaya',
             'phone' => '081333445566',
             'password' => Hash::make('password'),
@@ -121,6 +128,12 @@ class DatabaseSeeder extends Seeder
             'kuota' => 36,
             'status_lomba' => 'finished',
         ]);
+
+        // Penugasan Dewan Juri Resmi ke Kategori Lomba
+        $katMurai->juris()->sync([$juri1->id, $juri2->id, $juri3->id]);
+        $katLovebird->juris()->sync([$juri1->id, $juri2->id]);
+        $katCucak->juris()->sync([$juri2->id, $juri3->id]);
+        $katKacer->juris()->sync([$juri1->id, $juri3->id]);
 
         // 3. Burung Milik Peserta
         $burung1 = Burung::firstOrCreate(['slug' => 'samurai-x'], [

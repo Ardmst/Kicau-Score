@@ -69,6 +69,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/events/{event}', [AdminController::class, 'eventUpdate'])->name('events.update');
     Route::post('/events/{event}/kategori', [AdminController::class, 'kategoriStore'])->name('kategori.store');
     Route::post('/kategori/{kategori}/status', [AdminController::class, 'updateKategoriStatus'])->name('kategori.status');
+    Route::post('/kategori/{kategori}/juris', [AdminController::class, 'updateKategoriJuris'])->name('kategori.juris.update');
     Route::get('/verifikasi', [AdminController::class, 'verifikasiQueue'])->name('verifikasi.index');
     Route::post('/verifikasi/{pendaftaran}/acc', [AdminController::class, 'verifikasiAcc'])->name('verifikasi.acc');
     Route::post('/verifikasi/{pendaftaran}/reject', [AdminController::class, 'verifikasiReject'])->name('verifikasi.reject');
