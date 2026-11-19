@@ -57,7 +57,7 @@ flowchart TD
 
 ### 3. 🛡️ Immutable Audit Trail & Score Lock Policy
 - **Log Revisi Otomatis:** Setiap kali juri merevisi nilai sebelum sesi ditutup, sistem mewajibkan pengisian alasan dan mencatat nilai lama, nilai baru, serta ID juri ke tabel `penilaian_logs`.
-- **Penguncian Permanen:** Saat panitia mengubah status kategori menjadi `validated`, seluruh nilai terkunci otomatis (**HTTP 403 Forbidden** jika ada percobaan edit susulan).
+- **Penguncian Permanen:** Saat admin mengubah status kategori menjadi `validated`, seluruh nilai terkunci otomatis (**HTTP 403 Forbidden** jika ada percobaan edit susulan).
 
 ### 4. ⚡ Concurrency-Safe Gantangan Allocation (`GantanganService`)
 Menerapkan transaksi basis data ACID dan *Pessimistic Locking* (`lockForUpdate`). Ketika administrator memverifikasi bukti bayar peserta, nomor gantangan (`G-01` s.d. `G-36`) diterbitkan secara berurutan tanpa resiko duplikasi nomor, serta otomatis dirilis kembali jika pembayaran ditolak.
@@ -86,3 +86,124 @@ Proyek ini dibangun di atas **Laravel 13** dengan pola **MVC + Service Layer Arc
 - `app/Services/GantanganService.php` &rarr; Alokasi nomor gantangan atomik anti-race-condition.
 
 ### Skema Relasi Basis Data (7 Tabel Inti)
+```
+┌──────────────┐       1:N       ┌──────────────┐       1:1       ┌──────────────┐
+│    users     │────────────────>│   burungs    │────────────────>│ pendaftarans │
+└──────────────┘                 └──────────────┘                 └──────┬───────┘
+       │ 1:N                                                             │ N:1
+       ▼                                                                 ▼
+┌──────────────┐                 ┌──────────────┐       1:N       ┌──────────────┐
+│  penilaians  │<────────────────│penilaian_logs│                 │kategori_lomba│
+└──────────────┘                 └──────────────┘                 └──────┬───────┘
+       ▲                                                                 │ N:1
+       │ 1:N                                                             ▼
+       └──────────────────────────────────────────────────────────┌──────────────┐
+                                                                  │    events    │
+                                                                  └──────────────┘
+```
+
+---
+
+## 💻 Struktur Direktori Proyek
+
+```
+KicauScore/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/       # Auth, Admin, Juri, Peserta, Public Controllers
+│   │   └── Middleware/        # RoleMiddleware (RBAC Guard)
+│   ├── Models/                # Eloquent Models (User, Event, KategoriLomba, Burung, dll)
+│   ├── Policies/              # PenilaianPolicy (Score Lock Authorization)
+│   └── Services/              # ScoringEngineService & GantanganService
+├── database/
+│   ├── migrations/            # 10 Skema Migrasi Tabel Relasional & Waktu Event
+│   └── seeders/               # DatabaseSeeder (Dataset Lomba & Akun Realistis)
+├── resources/
+│   └── views/
+│       ├── layouts/           # Master Layout App & Juri Mobile Layout
+│       ├── public/            # Landing Page, Rundown, Scoreboard, & Profil Burung
+│       ├── auth/              # Login & Register No. WhatsApp
+│       ├── peserta/           # Dashboard, Koleksi Burung, Daftar Lomba, E-Tiket
+│       ├── juri/              # Grid Dashboard & Form Penilaian Mobile
+│       └── admin/             # Dashboard, Events, CRUD User, Verifikasi Queue
+├── routes/
+│   └── web.php                # Group Routing Berbasis Role & Public Endpoints
+└── tests/
+    └── Feature/               # Automated Tests (Scoring & Lock Validation)
+```
+
+---
+
+## 🚀 Panduan Instalasi Lokal
+
+### Prasyarat Sistem
+* **PHP:** Versi 8.4 atau lebih baru (dengan ekstensi `pdo_sqlite`, `mbstring`, `curl`, `openssl`)
+* **Composer:** Versi 2.x
+* **Node.js:** Versi 18+ & NPM (Opsional untuk asset build)
+
+### Langkah Instalasi
+```bash
+# 1. Clone repositori dari GitHub
+git clone https://github.com/Ardmst/Kicau-Score.git
+cd Kicau-Score
+
+# 2. Pasang seluruh dependensi PHP via Composer
+composer install
+
+# 3. Buat file konfigurasi environment lokal
+cp .env.example .env
+
+# 4. Generate Application Encryption Key
+php artisan key:generate
+
+# 5. Jalankan migrasi database dan isi data simulasi awal (seeder)
+php artisan migrate --seed
+
+# 6. Jalankan server lokal Laravel
+php artisan serve
+```
+
+Aplikasi siap diakses melalui peramban di `http://127.0.0.1:8000`.
+
+---
+
+## 🔑 Akun Default Pengujian
+
+Semua akun menggunakan kata sandi default: **`password`**
+
+| Peran (Role) | Identitas Login | Keterangan & Hak Akses |
+| :--- | :--- | :--- |
+| **Administrator** | Email: `admin@kicauscore.com`<br>No. HP: `081234567890` | Akses penuh: Master Event, Kategori, CRUD Akun, Verifikasi Bayar, Kunci Skor |
+| **Dewan Juri 01** | Email: `bambang@kicauscore.com`<br>No. HP: `081298765431` | Sesi penilaian mobile di arena gantangan (Bambang Sutrisno) |
+| **Dewan Juri 02** | Email: `joko@kicauscore.com`<br>No. HP: `081298765432` | Sesi penilaian mobile di arena gantangan (Joko Ansori) |
+| **Dewan Juri 03** | Email: `tri@kicauscore.com`<br>No. HP: `081298765433` | Sesi penilaian mobile di arena gantangan (Tri Wibowo) |
+| **Peserta Lomba** | No. HP: `081311223344`<br>*(Ahmad Fauzi)* | Pemilik burung *Samurai X* & *Golden Boy*, pemegang E-Tiket Gantangan G-12 |
+
+---
+
+## 🌐 Infrastruktur Cloud & Deployment
+
+Sistem telah di-deploy dan dapat diuji secara langsung pada staging environment:
+* **Domain Produksi:** [https://kicaumania.ardmst.my.id](https://kicaumania.ardmst.my.id)
+* **Cloud Platform:** Microsoft Azure Virtual Machine (Ubuntu 24.04 LTS, 2 vCPU, 4 GiB RAM)
+* **Web Server:** Nginx 1.24 dengan proteksi pemblokiran akses langsung ke file sensitif (`.env`, `.git`, `.sqlite`)
+* **PHP Runtime:** PHP 8.4.27-FPM (Ondřej Surý PPA)
+* **Security & SSL:** Cloudflare Edge Proxy + Let's Encrypt SSL Certificate (Full Strict)
+
+---
+
+## 👥 Tim Pengembang (Kelompok 3)
+
+| Nama Anggota | Peran / Jabatan | Modul & Tanggung Jawab Utama |
+| :--- | :--- | :--- |
+| **Ardi** | **Project Manager, Lead Architect & DevOps** | Arsitektur MVC & Service Layer, skema database migrations, concurrency service (`GantanganService`), deployment VPS & security hardening. |
+| **Rafly** | **Backend Developer (Scoring Engine & Validasi)** | Algoritma rata-rata multi-juri, 4-Tier Tie-Breaker, controller juri lapangan, audit trail revisi skor, & automated testing. |
+| **Daaris** | **Backend Developer (Auth, Event & Transaksi)** | Autentikasi No. WA, RoleMiddleware (RBAC), CRUD Event & Kategori, CRUD Akun Pengguna, dan seeder data kontes. |
+| **Natasya** | **Frontend UI/UX (Portal Publik & Peserta)** | Design system responsif, landing page jadwal lomba, dashboard peserta, formulir pendaftaran, dan portofolio rekam jejak burung. |
+| **Hasna** | **Frontend UI/UX (Juri & Admin) & QA / Tech Writer** | Antarmuka juri mobile-first, papan live scoreboard asinkron, panel verifikasi admin, matriks pengujian UAT, dan laporan akhir. |
+
+---
+
+## 📄 Lisensi
+
+Proyek ini dikembangkan sebagai pemenuhan Tugas Besar mata kuliah **Praktikum Pemrograman 2** dan dirilis di bawah lisensi [MIT License](LICENSE).
