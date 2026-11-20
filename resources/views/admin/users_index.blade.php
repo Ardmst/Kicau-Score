@@ -9,7 +9,7 @@
             <div class="flex items-center gap-2">
                 <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 text-xs font-bold uppercase tracking-wider">Hak Akses & Pengguna</span>
             </div>
-            <h1 class="font-headline font-bold text-2xl text-slate-900 tracking-tight mt-1">Manajemen Pengguna (CRUD)</h1>
+            <h1 class="font-headline font-bold text-2xl text-slate-900 tracking-tight mt-1">Manajemen Pengguna Sistem</h1>
             <p class="text-xs text-slate-500 mt-0.5">Kelola akun administrator, dewan juri lapangan bersertifikat, dan peserta lomba</p>
         </div>
 
@@ -93,7 +93,7 @@
                         <th class="py-3 px-4">Email</th>
                         <th class="py-3 px-4 text-center">Peran (Role)</th>
                         <th class="py-3 px-4 text-center">Terdaftar</th>
-                        <th class="py-3 px-4 text-center">Aksi (CRUD)</th>
+                        <th class="py-3 px-4 text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">

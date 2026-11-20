@@ -197,7 +197,7 @@
                         Verifikasi
                     </a>
                     <a href="{{ route('admin.users.index') }}" class="block px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all {{ request()->routeIs('admin.users*') ? 'bg-[#2E6B56] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-50' }}">
-                        Kelola User (CRUD)
+                        Kelola User
                     </a>
                 @endif
             @endauth

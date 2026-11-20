@@ -55,6 +55,8 @@ class AdminController extends Controller
 
     public function eventIndex(): View
     {
+        KategoriLomba::syncScheduleStatus();
+
         $events = Event::with(['kategoriLombas' => function ($q) {
             $q->with('juris')->withCount(['pendaftarans as verified_count' => function ($sub) {
                 $sub->where('status_pembayaran', 'verified');
@@ -97,7 +99,15 @@ class AdminController extends Controller
 
         $event->update($validated);
 
-        return redirect()->route('admin.events.index')->with('success', 'Master Event berhasil diperbarui!');
+        return redirect()->route('admin.events.index')->with('success', "Master Event '{$event->nama_event}' berhasil diperbarui!");
+    }
+
+    public function eventDestroy(Event $event): RedirectResponse
+    {
+        $nama = $event->nama_event;
+        $event->delete();
+
+        return redirect()->route('admin.events.index')->with('success', "Master Event '{$nama}' beserta kategorinya berhasil dihapus!");
     }
 
     public function kategoriStore(Request $request, Event $event): RedirectResponse
@@ -138,6 +148,52 @@ class AdminController extends Controller
         }
 
         return back()->with('success', "Kategori '{$validated['nama_kategori']}' berhasil ditambahkan ke event!");
+    }
+
+    public function kategoriUpdate(Request $request, KategoriLomba $kategori): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nama_kategori' => ['required', 'string', 'max:100'],
+            'jenis_burung' => ['nullable', 'string', 'max:100'],
+            'biaya' => ['required', 'numeric', 'min:0'],
+            'kuota' => ['required', 'integer', 'min:1'],
+            'jam_mulai' => ['nullable', 'string', 'max:10'],
+            'jam_selesai' => ['nullable', 'string', 'max:10'],
+            'status_lomba' => ['required', 'in:upcoming,ongoing,validasi,finished'],
+            'juri_ids' => ['nullable', 'array'],
+            'juri_ids.*' => ['exists:users,id'],
+        ]);
+
+        $statusBaru = $validated['status_lomba'];
+
+        $kategori->update([
+            'nama_kategori' => $validated['nama_kategori'],
+            'jenis_burung' => $validated['jenis_burung'] ?? null,
+            'biaya' => $validated['biaya'],
+            'kuota' => $validated['kuota'],
+            'jam_mulai' => $validated['jam_mulai'] ?? null,
+            'jam_selesai' => $validated['jam_selesai'] ?? null,
+            'status_lomba' => $statusBaru,
+        ]);
+
+        // Sync juri yang ditugaskan
+        $kategori->juris()->sync($validated['juri_ids'] ?? []);
+
+        // Jika status berpindah ke validasi atau finished, otomatis hitung skor & kunci nilai juri
+        if (in_array($statusBaru, ['validasi', 'finished'])) {
+            $this->scoringService->validasiDanKunciKategori($kategori->id, $statusBaru);
+        }
+
+        return back()->with('success', "Kategori '{$kategori->nama_kategori}' berhasil diperbarui secara lengkap!");
+    }
+
+    public function kategoriDestroy(KategoriLomba $kategori): RedirectResponse
+    {
+        $nama = $kategori->nama_kategori;
+        $kategori->juris()->detach();
+        $kategori->delete();
+
+        return back()->with('success', "Kategori '{$nama}' berhasil dihapus!");
     }
 
     public function updateKategoriJuris(Request $request, KategoriLomba $kategori): RedirectResponse

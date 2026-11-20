@@ -67,7 +67,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/events', [AdminController::class, 'eventIndex'])->name('events.index');
     Route::post('/events', [AdminController::class, 'eventStore'])->name('events.store');
     Route::put('/events/{event}', [AdminController::class, 'eventUpdate'])->name('events.update');
+    Route::delete('/events/{event}', [AdminController::class, 'eventDestroy'])->name('events.destroy');
     Route::post('/events/{event}/kategori', [AdminController::class, 'kategoriStore'])->name('kategori.store');
+    Route::put('/kategori/{kategori}', [AdminController::class, 'kategoriUpdate'])->name('kategori.update');
+    Route::delete('/kategori/{kategori}', [AdminController::class, 'kategoriDestroy'])->name('kategori.destroy');
     Route::post('/kategori/{kategori}/status', [AdminController::class, 'updateKategoriStatus'])->name('kategori.status');
     Route::post('/kategori/{kategori}/juris', [AdminController::class, 'updateKategoriJuris'])->name('kategori.juris.update');
     Route::get('/verifikasi', [AdminController::class, 'verifikasiQueue'])->name('verifikasi.index');

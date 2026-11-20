@@ -11,281 +11,620 @@ use App\Models\User;
 use App\Services\ScoringEngineService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database.
+     * Seed the application's database with complete realistic dummy data:
+     * - 2 Admins (ADM-001, ADM-002)
+     * - 10 Dewan Juri (JUR-001 .. JUR-010)
+     * - 40 Peserta (PST-001 .. PST-040) dengan minimal 2 burung per peserta (~90 burung)
+     * - 4 Events (1 Finished, 1 Ongoing Hari Ini, 2 Upcoming)
+     * - Pendaftaran, gantangan, penilaian juri, dan skor terkunci
      */
     public function run(): void
     {
-        // 1. Users (Admin, Juri, Peserta)
-        $admin = User::firstOrCreate(['email' => 'admin@kicauscore.com'], [
+        $passwordHash = Hash::make('password');
+        $scoringService = new ScoringEngineService;
+
+        // =========================================================================
+        // 1. ADMINS (2 User)
+        // =========================================================================
+        $admin1 = User::firstOrCreate(['email' => 'admin@kicauscore.com'], [
             'kode_id' => 'ADM-001',
             'name' => 'Administrator KicauScore',
             'phone' => '081234567890',
-            'password' => Hash::make('password'),
+            'password' => $passwordHash,
             'role' => 'admin',
         ]);
 
-        $juri1 = User::firstOrCreate(['email' => 'bambang@kicauscore.com'], [
-            'kode_id' => 'JUR-001',
-            'name' => 'Bambang Sutrisno',
-            'phone' => '081298765431',
-            'password' => Hash::make('password'),
-            'role' => 'juri',
+        $admin2 = User::firstOrCreate(['email' => 'panitia@kicauscore.com'], [
+            'kode_id' => 'ADM-002',
+            'name' => 'Panitia & Operator Lapangan',
+            'phone' => '081234567891',
+            'password' => $passwordHash,
+            'role' => 'admin',
         ]);
 
-        $juri2 = User::firstOrCreate(['email' => 'joko@kicauscore.com'], [
-            'kode_id' => 'JUR-002',
-            'name' => 'Joko Ansori',
-            'phone' => '081298765432',
-            'password' => Hash::make('password'),
-            'role' => 'juri',
+        // =========================================================================
+        // 2. DEWAN JURI (10 User)
+        // =========================================================================
+        $juriData = [
+            ['kode_id' => 'JUR-001', 'name' => 'Budi Santoso', 'email' => 'juri1@kicauscore.com', 'phone' => '081298765431'],
+            ['kode_id' => 'JUR-002', 'name' => 'Hendra Wijaya', 'email' => 'juri2@kicauscore.com', 'phone' => '081298765432'],
+            ['kode_id' => 'JUR-003', 'name' => 'Agus Pratama', 'email' => 'juri3@kicauscore.com', 'phone' => '081298765433'],
+            ['kode_id' => 'JUR-004', 'name' => 'Slamet Riyadi', 'email' => 'juri4@kicauscore.com', 'phone' => '081298765434'],
+            ['kode_id' => 'JUR-005', 'name' => 'Joko Susilo', 'email' => 'juri5@kicauscore.com', 'phone' => '081298765435'],
+            ['kode_id' => 'JUR-006', 'name' => 'Eko Wahyudi', 'email' => 'juri6@kicauscore.com', 'phone' => '081298765436'],
+            ['kode_id' => 'JUR-007', 'name' => 'Dedi Kurniawan', 'email' => 'juri7@kicauscore.com', 'phone' => '081298765437'],
+            ['kode_id' => 'JUR-008', 'name' => 'Wahyu Hidayat', 'email' => 'juri8@kicauscore.com', 'phone' => '081298765438'],
+            ['kode_id' => 'JUR-009', 'name' => 'Arif Budiman', 'email' => 'juri9@kicauscore.com', 'phone' => '081298765439'],
+            ['kode_id' => 'JUR-010', 'name' => 'Bambang Setiawan', 'email' => 'juri10@kicauscore.com', 'phone' => '081298765440'],
+        ];
+
+        $juris = [];
+        foreach ($juriData as $jd) {
+            $juris[] = User::firstOrCreate(['email' => $jd['email']], [
+                'kode_id' => $jd['kode_id'],
+                'name' => $jd['name'],
+                'phone' => $jd['phone'],
+                'password' => $passwordHash,
+                'role' => 'juri',
+            ]);
+        }
+
+        // =========================================================================
+        // 3. PESERTA (40 User) & BURUNG (Minimal 2 per peserta)
+        // =========================================================================
+        $pesertaNames = [
+            'Ahmad Fauzi', 'Bambang Sutrisno', 'Hendra Gunawan', 'Dimas Prasetyo', 'Rizky Ramadhan',
+            'Fajar Nugroho', 'Bayu Setiawan', 'Aditya Pratama', 'Ilham Hidayat', 'Teguh Wibowo',
+            'Wahyu Utomo', 'Danang Kurniawan', 'Rian Saputra', 'Arif Rahman', 'Galih Permana',
+            'Bagus Pamungkas', 'Indra Lesmana', 'Yoga Pratama', 'Faisal Akbar', 'Doni Prasetya',
+            'Sigit Purnomo', 'Gilang Ramadhan', 'Radit Kusuma', 'Irfan Hakim', 'Sandy Firmansyah',
+            'Deni Iskandar', 'Aldi Maulana', 'Lukman Hakim', 'Yudi Hermawan', 'Agus Salim',
+            'Hendri Syahputra', 'Farhan Fauzan', 'Kevin Sanjaya', 'Tommy Sugiarto', 'Dian Anggoro',
+            'Satria Wibisono', 'Reza Pahlevi', 'Aris Munandar', 'Rahmat Basuki', 'Firman Utina',
+        ];
+
+        $pesertas = [];
+        $allBurungs = [];
+
+        $birdTemplates = [
+            ['name' => 'Samurai X', 'jenis' => 'Murai Batu', 'prefix' => 'BNR-SLO', 'desc' => 'Gaya tarung sujud agresif, tembakan cililin & kenari rapat.'],
+            ['name' => 'Halilintar', 'jenis' => 'Murai Batu', 'prefix' => 'PBI-JTG', 'desc' => 'Volume tembus kristal, durasi kerja 10 menit stabil.'],
+            ['name' => 'Raja Laut', 'jenis' => 'Murai Batu', 'prefix' => 'RGN-JKT', 'desc' => 'Fisik tegap gagah ekor lentur, variasi materi greja tarung.'],
+            ['name' => 'Badai Selatan', 'jenis' => 'Murai Batu', 'prefix' => 'ORIQ-BDG', 'desc' => 'Tembakan pedas cililin, kapas tembak, durasi panjang.'],
+            ['name' => 'Siluman Kera', 'jenis' => 'Murai Batu', 'prefix' => 'BNR-SBY', 'desc' => 'Gaya ngeplay buka sayap, rol rapat speed rapat.'],
+            ['name' => 'Panglima', 'jenis' => 'Murai Batu', 'prefix' => 'PBI-DIY', 'desc' => 'Suara lantang menggelegar, variasi lovebird dan jenggot.'],
+            ['name' => 'Dewa Ruci', 'jenis' => 'Murai Batu', 'prefix' => 'RGN-SMG', 'desc' => 'Show mewah sujud sampai bawah tangkringan.'],
+            ['name' => 'Black Pearl', 'jenis' => 'Murai Batu', 'prefix' => 'BNR-SMG', 'desc' => 'Mental tarung tangguh tidak pernah kendor.'],
+            ['name' => 'Krakatau', 'jenis' => 'Murai Batu', 'prefix' => 'ORIQ-CRB', 'desc' => 'Lagu kenarian kristal disambung suara tembakan tajam.'],
+            ['name' => 'Petir', 'jenis' => 'Murai Batu', 'prefix' => 'PBI-JTM', 'desc' => 'Stamina prima di gantangan panas terik.'],
+
+            ['name' => 'Bimasakti', 'jenis' => 'Cucak Ijo', 'prefix' => 'CI-DIY', 'desc' => 'Ngentrok jambul istimewa, rol lagu tajam.'],
+            ['name' => 'Green Monster', 'jenis' => 'Cucak Ijo', 'prefix' => 'CI-SLO', 'desc' => 'Bongkar isian tengkek buto dan cucak jenggot.'],
+            ['name' => 'Zamrud Khatulistiwa', 'jenis' => 'Cucak Ijo', 'prefix' => 'CI-SBY', 'desc' => 'Gaya hiper getar ekor, durasi nyaris tanpa jeda.'],
+            ['name' => 'Hulk Mania', 'jenis' => 'Cucak Ijo', 'prefix' => 'CI-KLT', 'desc' => 'Volume dahsyat, tembakan walang krek rapat.'],
+            ['name' => 'Super Green', 'jenis' => 'Cucak Ijo', 'prefix' => 'CI-BDG', 'desc' => 'Irama lagu harmonis, jeda sangat tipis.'],
+            ['name' => 'Raja Jamtrok', 'jenis' => 'Cucak Ijo', 'prefix' => 'CI-JKT', 'desc' => 'Ngentrok dari awal digantang sampai bendera koncer.'],
+
+            ['name' => 'Pendekar Hitam', 'jenis' => 'Kacer', 'prefix' => 'KC-SLO', 'desc' => 'Buka ekor ngobra full 360 derajat, roll speed mewah.'],
+            ['name' => 'Black Diamond', 'jenis' => 'Kacer', 'prefix' => 'KC-JTG', 'desc' => 'Materi sirpu, prenjak gunung, tembakan tajam menusuk.'],
+            ['name' => 'Pangeran Hitam', 'jenis' => 'Kacer', 'prefix' => 'KC-DIY', 'desc' => 'Speed rapat ngobra stabil tangkringan anteng.'],
+            ['name' => 'Satria Bergitar', 'jenis' => 'Kacer', 'prefix' => 'KC-SBY', 'desc' => 'Irama lagu mewah, volume terdengar jelas hingga luar arena.'],
+            ['name' => 'Singo Edan', 'jenis' => 'Kacer', 'prefix' => 'KC-MLG', 'desc' => 'Tarung ngotot tidak gembung, performa luar biasa.'],
+
+            ['name' => 'Golden Boy', 'jenis' => 'Lovebird', 'prefix' => 'LB-SOLO', 'desc' => 'Ngekek panjang konslet menit awal hingga akhir.'],
+            ['name' => 'Ratu Ngepet', 'jenis' => 'Lovebird', 'prefix' => 'LB-JTG', 'desc' => 'Durasi 2 menit up konslet lemes tanpa henti.'],
+            ['name' => 'Bella Vista', 'jenis' => 'Lovebird', 'prefix' => 'LB-DIY', 'desc' => 'Ngekek fighter tembus lapangan, volume keras.'],
+            ['name' => 'Super Sonic', 'jenis' => 'Lovebird', 'prefix' => 'LB-SBY', 'desc' => 'Jeda rapat 3 detik langsung sambung ngekek.'],
+
+            ['name' => 'Ken Arok', 'jenis' => 'Kenari', 'prefix' => 'KN-KLT', 'desc' => 'Cengkok meliuk mewah, buka paruh lebar spasi rapi.'],
+            ['name' => 'Yellow Star', 'jenis' => 'Kenari', 'prefix' => 'KN-SLO', 'desc' => 'Durasi rol 45 detik nonstop, volume kristal.'],
+            ['name' => 'Bintang Kejora', 'jenis' => 'Kenari', 'prefix' => 'KN-DIY', 'desc' => 'Gaya wiper goyang kanan kiri nagen.'],
+
+            ['name' => 'Dewa Mabuk', 'jenis' => 'Anis Merah', 'prefix' => 'AM-BALI', 'desc' => 'Teler rebah mentok kiri kanan pules istimewa.'],
+            ['name' => 'Red Dragon', 'jenis' => 'Anis Merah', 'prefix' => 'AM-JTG', 'desc' => 'Teler doyong geser tangkringan irama merdu.'],
+
+            ['name' => 'Raja Hutan', 'jenis' => 'Cendet', 'prefix' => 'CD-MDN', 'desc' => 'Gaya tegak angka 1, rol tembak gereja tarung & kunti.'],
+            ['name' => 'Alap-Alap', 'jenis' => 'Branjangan', 'prefix' => 'BJ-JTG', 'desc' => 'Hovering kepak sayap sembari bongkar isian.'],
+        ];
+
+        $birdTemplateIndex = 0;
+        $totalTemplates = count($birdTemplates);
+
+        for ($i = 0; $i < 40; $i++) {
+            $num = $i + 1;
+            $kodeId = sprintf('PST-%03d', $num);
+            $name = $pesertaNames[$i];
+            $email = sprintf('peserta%d@kicauscore.com', $num);
+            $phone = sprintf('08130000%04d', $num);
+
+            $peserta = User::firstOrCreate(['email' => $email], [
+                'kode_id' => $kodeId,
+                'name' => $name,
+                'phone' => $phone,
+                'password' => $passwordHash,
+                'role' => 'peserta',
+            ]);
+            $pesertas[] = $peserta;
+
+            // Setiap peserta memiliki minimal 2 burung (peserta ke-1 s/d 10 punya 3 burung)
+            $birdsCount = ($i < 10) ? 3 : 2;
+
+            for ($b = 0; $b < $birdsCount; $b++) {
+                $tpl = $birdTemplates[$birdTemplateIndex % $totalTemplates];
+                $birdTemplateIndex++;
+
+                $birdName = $tpl['name'].' ('.$peserta->name.')';
+                $slug = Str::slug($birdName.'-'.$peserta->id.'-'.$b);
+                $ringNo = $tpl['prefix'].'-'.rand(100, 999);
+
+                $burung = Burung::firstOrCreate(['slug' => $slug], [
+                    'user_id' => $peserta->id,
+                    'nama_burung' => $tpl['name'],
+                    'jenis_burung' => $tpl['jenis'],
+                    'no_ring' => $ringNo,
+                    'catatan' => $tpl['desc'],
+                ]);
+
+                $allBurungs[] = [
+                    'burung' => $burung,
+                    'user' => $peserta,
+                    'jenis' => $tpl['jenis'],
+                ];
+            }
+        }
+
+        // =========================================================================
+        // 4. EVENTS (4 Master Events)
+        // =========================================================================
+
+        // -------------------------------------------------------------------------
+        // EVENT 1 (FINISHED): Piala Raja Mangkunegaran 2026
+        // -------------------------------------------------------------------------
+        $event1 = Event::firstOrCreate(['nama_event' => 'Piala Raja Mangkunegaran 2026'], [
+            'tanggal' => now()->subDays(3)->toDateString(),
+            'jam_mulai' => '08:00',
+            'jam_selesai' => '17:00',
+            'lokasi' => 'Taman Balekambang, Surakarta',
+            'deskripsi' => 'Kejuaraan Akbar Kicaumania Mangkunegaran • Kompetisi Resmi Berstandar PBI & BnR dengan Hadiah Utama Mobil & Trophy Mahkota Emas.',
+            'status' => 'finished',
         ]);
 
-        $juri3 = User::firstOrCreate(['email' => 'tri@kicauscore.com'], [
-            'kode_id' => 'JUR-003',
-            'name' => 'Tri Wibowo',
-            'phone' => '081298765433',
-            'password' => Hash::make('password'),
-            'role' => 'juri',
+        $ev1KatMurai = KategoriLomba::firstOrCreate([
+            'event_id' => $event1->id,
+            'slug' => 'murai-batu-ring-presiden',
+        ], [
+            'nama_kategori' => 'Murai Batu Ring Presiden',
+            'jenis_burung' => 'Murai Batu',
+            'biaya' => 500000,
+            'kuota' => 36,
+            'jam_mulai' => '08:30',
+            'jam_selesai' => '10:30',
+            'status_lomba' => 'finished',
         ]);
+        $ev1KatMurai->juris()->sync([$juris[0]->id, $juris[1]->id, $juris[2]->id, $juris[3]->id]);
 
-        $peserta1 = User::firstOrCreate(['phone' => '081311223344'], [
-            'kode_id' => 'PST-001',
-            'name' => 'Ahmad Fauzi',
-            'email' => 'fauzi@kicauscore.com',
-            'phone' => '081311223344',
-            'password' => Hash::make('password'),
-            'role' => 'peserta',
+        $ev1KatCucak = KategoriLomba::firstOrCreate([
+            'event_id' => $event1->id,
+            'slug' => 'cucak-ijo-mangkunegaran',
+        ], [
+            'nama_kategori' => 'Cucak Ijo Mangkunegaran',
+            'jenis_burung' => 'Cucak Ijo',
+            'biaya' => 250000,
+            'kuota' => 36,
+            'jam_mulai' => '10:30',
+            'jam_selesai' => '12:00',
+            'status_lomba' => 'finished',
         ]);
+        $ev1KatCucak->juris()->sync([$juris[1]->id, $juris[3]->id, $juris[5]->id]);
 
-        $peserta2 = User::firstOrCreate(['email' => 'budi@kicauscore.com'], [
-            'kode_id' => 'PST-002',
-            'name' => 'Budi Santoso',
-            'phone' => '081322334455',
-            'password' => Hash::make('password'),
-            'role' => 'peserta',
+        $ev1KatKacer = KategoriLomba::firstOrCreate([
+            'event_id' => $event1->id,
+            'slug' => 'kacer-adipati',
+        ], [
+            'nama_kategori' => 'Kacer Adipati',
+            'jenis_burung' => 'Kacer',
+            'biaya' => 200000,
+            'kuota' => 36,
+            'jam_mulai' => '13:00',
+            'jam_selesai' => '14:30',
+            'status_lomba' => 'finished',
         ]);
+        $ev1KatKacer->juris()->sync([$juris[0]->id, $juris[2]->id, $juris[4]->id]);
 
-        $peserta3 = User::firstOrCreate(['email' => 'hendra@kicauscore.com'], [
-            'kode_id' => 'PST-003',
-            'name' => 'Hendra Wijaya',
-            'phone' => '081333445566',
-            'password' => Hash::make('password'),
-            'role' => 'peserta',
-        ]);
+        // Isi Pendaftaran & Nilai Terkunci untuk Event 1 Murai Batu
+        $muraiBurungs = array_values(array_filter($allBurungs, fn ($b) => $b['jenis'] === 'Murai Batu'));
+        $cucakBurungs = array_values(array_filter($allBurungs, fn ($b) => $b['jenis'] === 'Cucak Ijo'));
+        $kacerBurungs = array_values(array_filter($allBurungs, fn ($b) => $b['jenis'] === 'Kacer'));
 
-        // 2. Events & Categories
-        $event = Event::firstOrCreate(['nama_event' => 'Kicau Nusantara Cup 2026'], [
-            'tanggal' => now()->addDays(7)->toDateString(),
-            'lokasi' => 'Gantangan Alun-Alun, Solo',
-            'deskripsi' => 'Kejuaraan Nasional Burung Berkicau Tingkat Master • Penilaian Algoritmik Multi-Juri Berstandar PBI & BNR',
+        for ($k = 0; $k < 10; $k++) {
+            if (! isset($muraiBurungs[$k])) {
+                break;
+            }
+            $bItem = $muraiBurungs[$k];
+            $p = Pendaftaran::firstOrCreate([
+                'kategori_lomba_id' => $ev1KatMurai->id,
+                'burung_id' => $bItem['burung']->id,
+            ], [
+                'user_id' => $bItem['user']->id,
+                'nomor_gantangan' => $k + 1,
+                'metode_pembayaran' => 'transfer',
+                'status_pembayaran' => 'verified',
+                'bukti_pembayaran' => 'bukti_piala_raja_'.($k + 1).'.jpg',
+            ]);
+
+            // Nilai juri 1..4
+            $baseVis = 90 - ($k * 1.5) + rand(-10, 10) / 10;
+            $baseAud = 92 - ($k * 1.5) + rand(-10, 10) / 10;
+            foreach ([$juris[0], $juris[1], $juris[2], $juris[3]] as $juri) {
+                $v = max(75, min(99, $baseVis + (rand(-10, 10) / 10)));
+                $a = max(75, min(99, $baseAud + (rand(-10, 10) / 10)));
+                Penilaian::firstOrCreate(['pendaftaran_id' => $p->id, 'juri_id' => $juri->id], [
+                    'skor_visual' => $v,
+                    'skor_audio' => $a,
+                    'total_skor_juri' => $v + $a,
+                    'catatan' => 'Performa stabil di kelas Ring Presiden.',
+                    'status_validasi' => 'validated',
+                ]);
+            }
+        }
+        $scoringService->validasiDanKunciKategori($ev1KatMurai->id, 'finished');
+
+        // Pendaftaran & Nilai untuk Cucak Ijo Event 1
+        for ($k = 0; $k < 8; $k++) {
+            if (! isset($cucakBurungs[$k])) {
+                break;
+            }
+            $bItem = $cucakBurungs[$k];
+            $p = Pendaftaran::firstOrCreate([
+                'kategori_lomba_id' => $ev1KatCucak->id,
+                'burung_id' => $bItem['burung']->id,
+            ], [
+                'user_id' => $bItem['user']->id,
+                'nomor_gantangan' => $k + 1,
+                'metode_pembayaran' => 'transfer',
+                'status_pembayaran' => 'verified',
+            ]);
+            foreach ([$juris[1], $juris[3], $juris[5]] as $juri) {
+                $v = 88 + rand(0, 8);
+                $a = 89 + rand(0, 8);
+                Penilaian::firstOrCreate(['pendaftaran_id' => $p->id, 'juri_id' => $juri->id], [
+                    'skor_visual' => $v,
+                    'skor_audio' => $a,
+                    'total_skor_juri' => $v + $a,
+                    'status_validasi' => 'validated',
+                ]);
+            }
+        }
+        $scoringService->validasiDanKunciKategori($ev1KatCucak->id, 'finished');
+
+        // -------------------------------------------------------------------------
+        // EVENT 2 (ONGOING HARI INI): Kicau Nusantara Cup 2026
+        // -------------------------------------------------------------------------
+        $event2 = Event::firstOrCreate(['nama_event' => 'Kicau Nusantara Cup 2026'], [
+            'tanggal' => now()->toDateString(),
+            'jam_mulai' => '08:30',
+            'jam_selesai' => '17:30',
+            'lokasi' => 'Arena Gantangan Alun-Alun, Solo',
+            'deskripsi' => 'Kejuaraan Nasional Burung Berkicau Tingkat Master • Penilaian Algoritmik Multi-Juri Berstandar PBI & BnR.',
             'status' => 'active',
         ]);
 
-        $katMurai = KategoriLomba::firstOrCreate([
-            'event_id' => $event->id,
+        // Kategori 1: Murai Batu VIP 36G (ONGOING - LIVE PENILAIAN)
+        $ev2KatMurai = KategoriLomba::firstOrCreate([
+            'event_id' => $event2->id,
             'slug' => 'murai-batu-vip-36g',
         ], [
             'nama_kategori' => 'Murai Batu VIP 36G',
             'jenis_burung' => 'Murai Batu',
             'biaya' => 350000,
             'kuota' => 36,
+            'jam_mulai' => '08:30',
+            'jam_selesai' => '11:00',
             'status_lomba' => 'ongoing',
         ]);
+        $ev2KatMurai->juris()->sync([$juris[0]->id, $juris[1]->id, $juris[2]->id]);
 
-        $katLovebird = KategoriLomba::firstOrCreate([
-            'event_id' => $event->id,
-            'slug' => 'lovebird-champion-a',
-        ], [
-            'nama_kategori' => 'Lovebird Champion A',
-            'jenis_burung' => 'Lovebird',
-            'biaya' => 150000,
-            'kuota' => 36,
-            'status_lomba' => 'upcoming',
-        ]);
-
-        $katCucak = KategoriLomba::firstOrCreate([
-            'event_id' => $event->id,
+        // Kategori 2: Cucak Ijo Super B (ONGOING)
+        $ev2KatCucak = KategoriLomba::firstOrCreate([
+            'event_id' => $event2->id,
             'slug' => 'cucak-ijo-super-b',
         ], [
             'nama_kategori' => 'Cucak Ijo Super B',
             'jenis_burung' => 'Cucak Ijo',
             'biaya' => 200000,
             'kuota' => 36,
-            'status_lomba' => 'upcoming',
+            'jam_mulai' => '11:00',
+            'jam_selesai' => '13:00',
+            'status_lomba' => 'ongoing',
         ]);
+        $ev2KatCucak->juris()->sync([$juris[3]->id, $juris[4]->id, $juris[5]->id]);
 
-        $katKacer = KategoriLomba::firstOrCreate([
-            'event_id' => $event->id,
+        // Kategori 3: Kacer Bintang (VALIDASI / TERKUNCI)
+        $ev2KatKacer = KategoriLomba::firstOrCreate([
+            'event_id' => $event2->id,
             'slug' => 'kacer-bintang',
         ], [
             'nama_kategori' => 'Kacer Bintang',
             'jenis_burung' => 'Kacer',
             'biaya' => 175000,
             'kuota' => 36,
-            'status_lomba' => 'finished',
+            'jam_mulai' => '13:00',
+            'jam_selesai' => '14:30',
+            'status_lomba' => 'validasi',
         ]);
+        $ev2KatKacer->juris()->sync([$juris[0]->id, $juris[2]->id, $juris[4]->id]);
 
-        // Penugasan Dewan Juri Resmi ke Kategori Lomba
-        $katMurai->juris()->sync([$juri1->id, $juri2->id, $juri3->id]);
-        $katLovebird->juris()->sync([$juri1->id, $juri2->id]);
-        $katCucak->juris()->sync([$juri2->id, $juri3->id]);
-        $katKacer->juris()->sync([$juri1->id, $juri3->id]);
-
-        // 3. Burung Milik Peserta
-        $burung1 = Burung::firstOrCreate(['slug' => 'samurai-x'], [
-            'user_id' => $peserta1->id,
-            'nama_burung' => 'Samurai X',
-            'jenis_burung' => 'Murai Batu',
-            'no_ring' => 'BNR-SOLO-0921',
-            'catatan' => 'Gaya tarung sujud agresif, tembakan cililin & kenari rapat.',
-        ]);
-
-        $burung2 = Burung::firstOrCreate(['slug' => 'halilintar'], [
-            'user_id' => $peserta2->id,
-            'nama_burung' => 'Halilintar',
-            'jenis_burung' => 'Murai Batu',
-            'no_ring' => 'PBI-JTG-1102',
-            'catatan' => 'Volume tembus kristal, durasi kerja 10 menit stabil.',
-        ]);
-
-        $burung3 = Burung::firstOrCreate(['slug' => 'raja-laut'], [
-            'user_id' => $peserta3->id,
-            'nama_burung' => 'Raja Laut',
-            'jenis_burung' => 'Murai Batu',
-            'no_ring' => 'RGN-JKT-3341',
-            'catatan' => 'Fisik tegap gagah ekor lentur, variasi materi greja tarung.',
-        ]);
-
-        $burung4 = Burung::firstOrCreate(['slug' => 'golden-boy'], [
-            'user_id' => $peserta1->id,
-            'nama_burung' => 'Golden Boy',
+        // Kategori 4: Lovebird Champion A (UPCOMING SORE)
+        $ev2KatLovebird = KategoriLomba::firstOrCreate([
+            'event_id' => $event2->id,
+            'slug' => 'lovebird-champion-a',
+        ], [
+            'nama_kategori' => 'Lovebird Champion A',
             'jenis_burung' => 'Lovebird',
-            'no_ring' => 'LB-SOLO-4412',
-            'catatan' => 'Ngekek panjang konslet menit awal hingga akhir.',
+            'biaya' => 150000,
+            'kuota' => 36,
+            'jam_mulai' => '15:00',
+            'jam_selesai' => '16:30',
+            'status_lomba' => 'upcoming',
+        ]);
+        $ev2KatLovebird->juris()->sync([$juris[6]->id, $juris[7]->id, $juris[8]->id]);
+
+        // Kategori 5: Kenari Reguler (UPCOMING SORE)
+        $ev2KatKenari = KategoriLomba::firstOrCreate([
+            'event_id' => $event2->id,
+            'slug' => 'kenari-reguler',
+        ], [
+            'nama_kategori' => 'Kenari Reguler',
+            'jenis_burung' => 'Kenari',
+            'biaya' => 100000,
+            'kuota' => 36,
+            'jam_mulai' => '16:30',
+            'jam_selesai' => '17:30',
+            'status_lomba' => 'upcoming',
+        ]);
+        $ev2KatKenari->juris()->sync([$juris[7]->id, $juris[8]->id, $juris[9]->id]);
+
+        // Pendaftaran & Penilaian Live untuk Event 2 Murai Batu (12 Peserta)
+        for ($k = 0; $k < 12; $k++) {
+            $idx = ($k + 10) % count($muraiBurungs);
+            $bItem = $muraiBurungs[$idx];
+            $p = Pendaftaran::firstOrCreate([
+                'kategori_lomba_id' => $ev2KatMurai->id,
+                'burung_id' => $bItem['burung']->id,
+            ], [
+                'user_id' => $bItem['user']->id,
+                'nomor_gantangan' => $k + 1,
+                'metode_pembayaran' => ($k % 2 === 0) ? 'transfer' : 'cash',
+                'status_pembayaran' => 'verified',
+                'bukti_pembayaran' => 'bukti_gantangan_'.($k + 1).'.jpg',
+            ]);
+
+            // Beri nilai juri 1, 2, 3 (live skor)
+            foreach ([$juris[0], $juris[1], $juris[2]] as $juri) {
+                $vis = 88.0 + rand(0, 9);
+                $aud = 90.0 + rand(0, 8);
+                Penilaian::firstOrCreate(['pendaftaran_id' => $p->id, 'juri_id' => $juri->id], [
+                    'skor_visual' => $vis,
+                    'skor_audio' => $aud,
+                    'total_skor_juri' => $vis + $aud,
+                    'catatan' => 'Sesi live gantangan Alun-Alun.',
+                    'status_validasi' => 'draft',
+                ]);
+            }
+        }
+        $scoringService->hitungHasilKategori($ev2KatMurai->id);
+
+        // Pendaftaran Kacer Bintang Event 2 (Terkunci / Validasi)
+        for ($k = 0; $k < 8; $k++) {
+            $idx = $k % count($kacerBurungs);
+            $bItem = $kacerBurungs[$idx];
+            $p = Pendaftaran::firstOrCreate([
+                'kategori_lomba_id' => $ev2KatKacer->id,
+                'burung_id' => $bItem['burung']->id,
+            ], [
+                'user_id' => $bItem['user']->id,
+                'nomor_gantangan' => $k + 1,
+                'metode_pembayaran' => 'transfer',
+                'status_pembayaran' => 'verified',
+            ]);
+            foreach ([$juris[0], $juris[2], $juris[4]] as $juri) {
+                $vis = 87 + rand(0, 8);
+                $aud = 88 + rand(0, 8);
+                Penilaian::firstOrCreate(['pendaftaran_id' => $p->id, 'juri_id' => $juri->id], [
+                    'skor_visual' => $vis,
+                    'skor_audio' => $aud,
+                    'total_skor_juri' => $vis + $aud,
+                    'status_validasi' => 'validated',
+                ]);
+            }
+        }
+        $scoringService->validasiDanKunciKategori($ev2KatKacer->id, 'validasi');
+
+        // Pendaftaran Lovebird & Kenari (Upcoming)
+        $lovebirdBurungs = array_values(array_filter($allBurungs, fn ($b) => $b['jenis'] === 'Lovebird'));
+        for ($k = 0; $k < min(6, count($lovebirdBurungs)); $k++) {
+            $bItem = $lovebirdBurungs[$k];
+            Pendaftaran::firstOrCreate([
+                'kategori_lomba_id' => $ev2KatLovebird->id,
+                'burung_id' => $bItem['burung']->id,
+            ], [
+                'user_id' => $bItem['user']->id,
+                'nomor_gantangan' => $k + 1,
+                'metode_pembayaran' => 'transfer',
+                'status_pembayaran' => 'verified',
+            ]);
+        }
+
+        // -------------------------------------------------------------------------
+        // EVENT 3 (UPCOMING 1): Piala Presiden Kicaumania 2026 (+7 Hari)
+        // -------------------------------------------------------------------------
+        $event3 = Event::firstOrCreate(['nama_event' => 'Piala Presiden Kicaumania 2026'], [
+            'tanggal' => now()->addDays(7)->toDateString(),
+            'jam_mulai' => '08:00',
+            'jam_selesai' => '17:00',
+            'lokasi' => 'Stadion Manahan Open Arena, Solo',
+            'deskripsi' => 'Turnamen Akbar Bergengsi Piala Presiden Kicaumania Se-Jawa Bali 2026 • Tiket Pendaftaran Online Terbuka.',
+            'status' => 'active',
         ]);
 
-        $burung5 = Burung::firstOrCreate(['slug' => 'bimasakti'], [
-            'user_id' => $peserta2->id,
-            'nama_burung' => 'Bimasakti',
+        $ev3KatMurai = KategoriLomba::firstOrCreate([
+            'event_id' => $event3->id,
+            'slug' => 'murai-batu-presiden-super',
+        ], [
+            'nama_kategori' => 'Murai Batu Presiden Super',
+            'jenis_burung' => 'Murai Batu',
+            'biaya' => 500000,
+            'kuota' => 36,
+            'jam_mulai' => '09:00',
+            'jam_selesai' => '11:00',
+            'status_lomba' => 'upcoming',
+        ]);
+        $ev3KatMurai->juris()->sync([$juris[0]->id, $juris[1]->id, $juris[2]->id, $juris[3]->id]);
+
+        $ev3KatCucak = KategoriLomba::firstOrCreate([
+            'event_id' => $event3->id,
+            'slug' => 'cucak-ijo-manahan',
+        ], [
+            'nama_kategori' => 'Cucak Ijo Manahan',
             'jenis_burung' => 'Cucak Ijo',
-            'no_ring' => 'CI-DIY-7721',
-            'catatan' => 'Ngentrok jambul istimewa, rol lagu tajam.',
+            'biaya' => 250000,
+            'kuota' => 36,
+            'jam_mulai' => '11:00',
+            'jam_selesai' => '12:30',
+            'status_lomba' => 'upcoming',
         ]);
+        $ev3KatCucak->juris()->sync([$juris[4]->id, $juris[5]->id]);
 
-        // 4. Pendaftaran di Kategori Murai Batu VIP 36G
-        $p1 = Pendaftaran::firstOrCreate([
-            'kategori_lomba_id' => $katMurai->id,
-            'burung_id' => $burung1->id,
+        $ev3KatKacer = KategoriLomba::firstOrCreate([
+            'event_id' => $event3->id,
+            'slug' => 'kacer-mataram',
         ], [
-            'user_id' => $peserta1->id,
-            'nomor_gantangan' => 12,
-            'metode_pembayaran' => 'transfer',
-            'status_pembayaran' => 'verified',
-            'bukti_pembayaran' => 'bukti_sample_1.jpg',
+            'nama_kategori' => 'Kacer Mataram',
+            'jenis_burung' => 'Kacer',
+            'biaya' => 200000,
+            'kuota' => 36,
+            'jam_mulai' => '13:30',
+            'jam_selesai' => '15:00',
+            'status_lomba' => 'upcoming',
         ]);
+        $ev3KatKacer->juris()->sync([$juris[6]->id, $juris[7]->id]);
 
-        $p2 = Pendaftaran::firstOrCreate([
-            'kategori_lomba_id' => $katMurai->id,
-            'burung_id' => $burung2->id,
+        $ev3KatLovebird = KategoriLomba::firstOrCreate([
+            'event_id' => $event3->id,
+            'slug' => 'lovebird-konslet-mania',
         ], [
-            'user_id' => $peserta2->id,
-            'nomor_gantangan' => 6,
-            'metode_pembayaran' => 'transfer',
-            'status_pembayaran' => 'verified',
-            'bukti_pembayaran' => 'bukti_sample_2.jpg',
+            'nama_kategori' => 'Lovebird Konslet Mania',
+            'jenis_burung' => 'Lovebird',
+            'biaya' => 150000,
+            'kuota' => 36,
+            'jam_mulai' => '15:00',
+            'jam_selesai' => '16:30',
+            'status_lomba' => 'upcoming',
+        ]);
+        $ev3KatLovebird->juris()->sync([$juris[8]->id, $juris[9]->id]);
+
+        // Tambah beberapa pendaftaran status PENDING untuk demo antrian verifikasi Admin
+        for ($pPending = 0; $pPending < 3; $pPending++) {
+            $burungPendingIdx = 22 + $pPending;
+            if (isset($muraiBurungs[$burungPendingIdx])) {
+                $bItem = $muraiBurungs[$burungPendingIdx];
+                Pendaftaran::firstOrCreate([
+                    'kategori_lomba_id' => $ev3KatMurai->id,
+                    'burung_id' => $bItem['burung']->id,
+                ], [
+                    'user_id' => $bItem['user']->id,
+                    'metode_pembayaran' => 'transfer',
+                    'status_pembayaran' => 'pending',
+                    'bukti_pembayaran' => 'bukti_transfer_presiden_'.($pPending + 1).'.jpg',
+                ]);
+            }
+        }
+
+        // -------------------------------------------------------------------------
+        // EVENT 4 (UPCOMING 2): Grand Prix BnR Indonesia Master 2026 (+14 Hari)
+        // -------------------------------------------------------------------------
+        $event4 = Event::firstOrCreate(['nama_event' => 'Grand Prix BnR Indonesia Master 2026'], [
+            'tanggal' => now()->addDays(14)->toDateString(),
+            'jam_mulai' => '08:00',
+            'jam_selesai' => '17:30',
+            'lokasi' => 'Taman Mini Indonesia Indah, Jakarta',
+            'deskripsi' => 'Seri Grand Prix BnR Indonesia Master Road to Asia Bird Championship 2027 • Perebutan Piala Bergilir & Sertifikasi Internasional.',
+            'status' => 'active',
         ]);
 
-        $p3 = Pendaftaran::firstOrCreate([
-            'kategori_lomba_id' => $katMurai->id,
-            'burung_id' => $burung3->id,
+        $ev4KatMurai = KategoriLomba::firstOrCreate([
+            'event_id' => $event4->id,
+            'slug' => 'murai-batu-master-asia',
         ], [
-            'user_id' => $peserta3->id,
-            'nomor_gantangan' => 1,
-            'metode_pembayaran' => 'cash',
-            'status_pembayaran' => 'verified',
+            'nama_kategori' => 'Murai Batu Master Asia',
+            'jenis_burung' => 'Murai Batu',
+            'biaya' => 750000,
+            'kuota' => 36,
+            'jam_mulai' => '09:00',
+            'jam_selesai' => '11:30',
+            'status_lomba' => 'upcoming',
         ]);
+        $ev4KatMurai->juris()->sync([$juris[0]->id, $juris[1]->id, $juris[2]->id, $juris[3]->id, $juris[4]->id]);
 
-        // Pendaftaran pending untuk testing verifikasi admin
-        $pPending = Pendaftaran::firstOrCreate([
-            'kategori_lomba_id' => $katLovebird->id,
-            'burung_id' => $burung4->id,
+        $ev4KatCucak = KategoriLomba::firstOrCreate([
+            'event_id' => $event4->id,
+            'slug' => 'cucak-ijo-nasional',
         ], [
-            'user_id' => $peserta1->id,
-            'metode_pembayaran' => 'transfer',
-            'status_pembayaran' => 'pending',
-            'bukti_pembayaran' => 'bukti_sample_pending.jpg',
+            'nama_kategori' => 'Cucak Ijo Nasional',
+            'jenis_burung' => 'Cucak Ijo',
+            'biaya' => 350000,
+            'kuota' => 36,
+            'jam_mulai' => '11:30',
+            'jam_selesai' => '13:00',
+            'status_lomba' => 'upcoming',
         ]);
+        $ev4KatCucak->juris()->sync([$juris[5]->id, $juris[6]->id]);
 
-        // 5. Penilaian oleh Juri 1, 2, 3 untuk p1 (Samurai X), p2 (Halilintar), p3 (Raja Laut)
-        // Penilaian P1:
-        Penilaian::firstOrCreate(['pendaftaran_id' => $p1->id, 'juri_id' => $juri1->id], [
-            'skor_visual' => 92.50,
-            'skor_audio' => 95.00,
-            'total_skor_juri' => 187.50,
-            'catatan' => 'Sujud agresif, irama lagu sangat variatif.',
-            'status_validasi' => 'draft',
+        $ev4KatKacer = KategoriLomba::firstOrCreate([
+            'event_id' => $event4->id,
+            'slug' => 'kacer-hitam-putih',
+        ], [
+            'nama_kategori' => 'Kacer Hitam Putih',
+            'jenis_burung' => 'Kacer',
+            'biaya' => 250000,
+            'kuota' => 36,
+            'jam_mulai' => '13:30',
+            'jam_selesai' => '15:00',
+            'status_lomba' => 'upcoming',
         ]);
-        Penilaian::firstOrCreate(['pendaftaran_id' => $p1->id, 'juri_id' => $juri2->id], [
-            'skor_visual' => 91.00,
-            'skor_audio' => 94.50,
-            'total_skor_juri' => 185.50,
-            'catatan' => 'Tembakan kenari dan cililin rapat.',
-            'status_validasi' => 'draft',
-        ]);
-        Penilaian::firstOrCreate(['pendaftaran_id' => $p1->id, 'juri_id' => $juri3->id], [
-            'skor_visual' => 93.00,
-            'skor_audio' => 96.00,
-            'total_skor_juri' => 189.00,
-            'catatan' => 'Performa sangat dominan di gantangan.',
-            'status_validasi' => 'draft',
-        ]);
+        $ev4KatKacer->juris()->sync([$juris[7]->id, $juris[8]->id]);
 
-        // Penilaian P2:
-        Penilaian::firstOrCreate(['pendaftaran_id' => $p2->id, 'juri_id' => $juri1->id], [
-            'skor_visual' => 90.00,
-            'skor_audio' => 91.50,
-            'total_skor_juri' => 181.50,
-            'status_validasi' => 'draft',
+        $ev4KatAnis = KategoriLomba::firstOrCreate([
+            'event_id' => $event4->id,
+            'slug' => 'anis-merah-teler-mania',
+        ], [
+            'nama_kategori' => 'Anis Merah Teler Mania',
+            'jenis_burung' => 'Anis Merah',
+            'biaya' => 200000,
+            'kuota' => 36,
+            'jam_mulai' => '15:00',
+            'jam_selesai' => '16:30',
+            'status_lomba' => 'upcoming',
         ]);
-        Penilaian::firstOrCreate(['pendaftaran_id' => $p2->id, 'juri_id' => $juri2->id], [
-            'skor_visual' => 89.50,
-            'skor_audio' => 92.00,
-            'total_skor_juri' => 181.50,
-            'status_validasi' => 'draft',
-        ]);
-        Penilaian::firstOrCreate(['pendaftaran_id' => $p2->id, 'juri_id' => $juri3->id], [
-            'skor_visual' => 91.00,
-            'skor_audio' => 91.00,
-            'total_skor_juri' => 182.00,
-            'status_validasi' => 'draft',
-        ]);
+        $ev4KatAnis->juris()->sync([$juris[1]->id, $juris[9]->id]);
 
-        // Penilaian P3:
-        Penilaian::firstOrCreate(['pendaftaran_id' => $p3->id, 'juri_id' => $juri1->id], [
-            'skor_visual' => 88.00,
-            'skor_audio' => 89.00,
-            'total_skor_juri' => 177.00,
-            'status_validasi' => 'draft',
+        $ev4KatBranjangan = KategoriLomba::firstOrCreate([
+            'event_id' => $event4->id,
+            'slug' => 'branjangan-java-ring',
+        ], [
+            'nama_kategori' => 'Branjangan Java Ring',
+            'jenis_burung' => 'Branjangan',
+            'biaya' => 200000,
+            'kuota' => 36,
+            'jam_mulai' => '16:30',
+            'jam_selesai' => '17:30',
+            'status_lomba' => 'upcoming',
         ]);
-        Penilaian::firstOrCreate(['pendaftaran_id' => $p3->id, 'juri_id' => $juri2->id], [
-            'skor_visual' => 87.50,
-            'skor_audio' => 90.00,
-            'total_skor_juri' => 177.50,
-            'status_validasi' => 'draft',
-        ]);
-        Penilaian::firstOrCreate(['pendaftaran_id' => $p3->id, 'juri_id' => $juri3->id], [
-            'skor_visual' => 89.00,
-            'skor_audio' => 88.50,
-            'total_skor_juri' => 177.50,
-            'status_validasi' => 'draft',
-        ]);
-
-        // 6. Jalankan ScoringEngineService untuk menghitung agregasi rata-rata & klasemen awal
-        $scoringService = new ScoringEngineService;
-        $scoringService->hitungHasilKategori($katMurai->id);
+        $ev4KatBranjangan->juris()->sync([$juris[3]->id, $juris[8]->id]);
     }
 }

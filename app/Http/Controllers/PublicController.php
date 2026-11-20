@@ -18,6 +18,8 @@ class PublicController extends Controller
 
     public function index(Request $request): View
     {
+        KategoriLomba::syncScheduleStatus();
+
         $event = Event::with(['kategoriLombas' => function ($q) {
             $q->withCount(['pendaftarans as total_terdaftar' => function ($sub) {
                 $sub->where('status_pembayaran', 'verified');

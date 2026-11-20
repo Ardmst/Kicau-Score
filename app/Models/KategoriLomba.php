@@ -102,4 +102,26 @@ class KategoriLomba extends Model
         return $this->belongsToMany(User::class, 'kategori_juri', 'kategori_lomba_id', 'user_id')
             ->withTimestamps();
     }
+
+    /**
+     * Otomatis transisikan kategori dari upcoming ke ongoing
+     * jika event aktif dan waktu sekarang sudah mencapai jam_mulai.
+     */
+    public static function syncScheduleStatus(): void
+    {
+        $today = now()->toDateString();
+        $currentTime = now()->format('H:i');
+
+        $kategoris = static::whereHas('event', function ($q) use ($today) {
+            $q->whereDate('tanggal', '<=', $today)->where('status', 'active');
+        })
+        ->where('status_lomba', 'upcoming')
+        ->whereNotNull('jam_mulai')
+        ->where('jam_mulai', '<=', $currentTime)
+        ->get();
+
+        foreach ($kategoris as $kategori) {
+            $kategori->update(['status_lomba' => 'ongoing']);
+        }
+    }
 }
